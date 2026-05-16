@@ -2,18 +2,18 @@
 #include <vector>
 #include <chrono>
 
-#include "data.h"
-#include "fileHandler.h"
+#include "../include/data.h"
+#include "../include/fileHandler.h"
 
 // ── Toggle this define to benchmark either structure ──────────────────────────
 #define USE_HASH_SYSTEM // Aktifkan jika mau menggunakan hash table, default linked list
 
 #ifdef USE_HASH_SYSTEM
-#include "hashSystem.h"
+#include "../include/hashSystem.h"
 using DataStructure = HashSystem;
 using DataNode = HashNode;
 #else
-#include "linkedList.h"
+#include "../include/linkedList.h"
 using DataStructure = LinkedList;
 using DataNode = Node;
 #endif
@@ -49,7 +49,7 @@ int main()
       long showTime = 0;
       long detectTime = 0;
 
-      vector<Data> dataset = readCSV("dataset/dataset.csv");
+      vector<Data> dataset = readCSV("public/dataset.csv");
       for (Data d : dataset) ds.insert(d);
             
       int choice;

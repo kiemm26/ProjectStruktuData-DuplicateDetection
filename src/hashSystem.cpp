@@ -1,4 +1,4 @@
-#include "hashSystem.h"
+#include "../include/hashSystem.h"
 
 #include <iostream>
 #include <fstream>
@@ -7,26 +7,6 @@
 
 using namespace std;
 
-// ══════════════════════════════════════════════════════════════════════════════
-//  HASH FUNCTION
-// ══════════════════════════════════════════════════════════════════════════════
-//
-//  Polynomial rolling hash:
-//
-//      h = Σ ( key[i] * BASE^i )  mod  TABLE_SIZE
-//
-//  • BASE = 31  – small prime, works well for lowercase/mixed ASCII
-//  • TABLE_SIZE = 2003  – prime, reduces clustering from the modulo step
-//
-//  Why this function?
-//  ──────────────────
-//  A simple sum-of-characters hash clusters: "abc" == "bca" == "cab".
-//  The positional weight (BASE^i) makes the hash position-sensitive,
-//  spreading keys more evenly across buckets.
-//
-//  Time complexity: O(|key|)
-//  Expected collisions per bucket with 1 000 keys: ~0.5  (Birthday bound)
-//
 int HashSystem::hashFunction(const string &key) const
 {
       const int BASE = 31;
@@ -43,10 +23,7 @@ int HashSystem::hashFunction(const string &key) const
       return (int)((hash % TABLE_SIZE + TABLE_SIZE) % TABLE_SIZE);
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  CONSTRUCTOR / DESTRUCTOR
-// ══════════════════════════════════════════════════════════════════════════════
-
 HashSystem::HashSystem()
 {
       for (int i = 0; i < TABLE_SIZE; i++)
@@ -71,15 +48,7 @@ HashSystem::~HashSystem()
       }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  INSERT
-// ══════════════════════════════════════════════════════════════════════════════
-//
-//  1. Compute bucket index from d.id  → O(|id|)  ≈ O(1) for fixed-length IDs
-//  2. Prepend new node at bucket head → O(1)
-//
-//  Overall: O(1) amortised
-//
 void HashSystem::insert(Data d)
 {
       int idx = hashFunction(d.id);
@@ -93,15 +62,7 @@ void HashSystem::insert(Data d)
       totalNodes++;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  SEARCH
-// ══════════════════════════════════════════════════════════════════════════════
-//
-//  searchByID    → hash on id → walk one bucket → O(1) avg / O(n) worst
-//  searchByName  → must scan all buckets (no name index) → O(n)
-//  searchByIDAndName → hash on id, then check name in that bucket → O(1) avg
-//
-
 HashNode *HashSystem::searchByID(const string &id)
 {
       int idx = hashFunction(id);
@@ -146,13 +107,7 @@ HashNode *HashSystem::searchByIDAndName(const string &id, const string &name)
       return nullptr;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  DELETE
-// ══════════════════════════════════════════════════════════════════════════════
-//
-//  Locate the correct bucket via hash, then unlink the node.
-//  Time complexity: O(1) avg / O(n) worst (long chain in one bucket)
-//
 void HashSystem::deleteByID(const string &id)
 {
       int idx = hashFunction(id);
@@ -181,10 +136,8 @@ void HashSystem::deleteByID(const string &id)
       cout << "Data not found" << endl;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  HELPER – collect all nodes into a flat vector (preserves insertion order
 //  per bucket; bucket order follows hash index)
-// ══════════════════════════════════════════════════════════════════════════════
 
 static vector<HashNode *> collectAll(HashNode **table, int tableSize)
 {
@@ -201,10 +154,7 @@ static vector<HashNode *> collectAll(HashNode **table, int tableSize)
       return rows;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  PRINT HELPERS  (identical formatting to LinkedList)
-// ══════════════════════════════════════════════════════════════════════════════
-
 static string truncate(const string &text, int width)
 {
       if ((int)text.length() <= width)
@@ -232,10 +182,7 @@ void HashSystem::printRow(int rowNum, const Data &d) const
            << endl;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  PRINT ALL  – paginated, 20 rows per page
-// ══════════════════════════════════════════════════════════════════════════════
-
 void HashSystem::printAll()
 {
       vector<HashNode *> rows = collectAll(table, TABLE_SIZE);
@@ -277,10 +224,7 @@ void HashSystem::printAll()
       }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  RESET DUPLICATE FLAGS
-// ══════════════════════════════════════════════════════════════════════════════
-
 void HashSystem::resetDuplicate()
 {
       for (int i = 0; i < TABLE_SIZE; i++)
@@ -294,17 +238,7 @@ void HashSystem::resetDuplicate()
       }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  DETECT DUPLICATE – BY CONTENT
-// ══════════════════════════════════════════════════════════════════════════════
-//
-//  Strategy: build a secondary map  content → vector<HashNode*>  in O(n),
-//  then mark & output groups in O(n).  Total: O(n)  vs LinkedList's O(n²).
-//
-//  Uses std::vector as a local associative structure to avoid unordered_map
-//  (per requirement of "manual hash table").  The inner loop is bounded by
-//  the number of nodes that share the same content hash – in practice tiny.
-//
 void HashSystem::detectDuplicateByContent()
 {
       duplicateMode = 1;
@@ -317,9 +251,7 @@ void HashSystem::detectDuplicateByContent()
             return;
       }
 
-      // ── secondary content-index using a manual hash table (vector of chains)
-      //    key = content string, value = list of pointers to HashNode
-      const int CIDX_SIZE = 2003;
+      const int CIDX_SIZE = 2003; // nilai prima lebih baik
       struct CNode
       {
             string key;
@@ -328,7 +260,6 @@ void HashSystem::detectDuplicateByContent()
       };
       vector<CNode *> cidx(CIDX_SIZE, nullptr);
 
-      // Lambda: hash a content string into cidx
       auto cidxHash = [&](const string &s) -> int
       {
             const int BASE = 31;
@@ -341,7 +272,6 @@ void HashSystem::detectDuplicateByContent()
             return (int)((h % CIDX_SIZE + CIDX_SIZE) % CIDX_SIZE);
       };
 
-      // Populate content index  O(n)
       for (int i = 0; i < TABLE_SIZE; i++)
       {
             HashNode *curr = table[i];
@@ -398,10 +328,7 @@ void HashSystem::detectDuplicateByContent()
       cout << "Duplicate detection finished. Result saved to output/result.txt\n";
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  DETECT DUPLICATE – BY METADATA  (name + size)
-// ══════════════════════════════════════════════════════════════════════════════
-
 void HashSystem::detectDuplicateByMetadata()
 {
       duplicateMode = 2;
@@ -435,7 +362,6 @@ void HashSystem::detectDuplicateByMetadata()
             return (int)((h % MIDX_SIZE + MIDX_SIZE) % MIDX_SIZE);
       };
 
-      // Build composite key: name + "|" + size
       for (int i = 0; i < TABLE_SIZE; i++)
       {
             HashNode *curr = table[i];
@@ -492,10 +418,7 @@ void HashSystem::detectDuplicateByMetadata()
       cout << "Duplicate detection finished. Result saved to output/result.txt\n";
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  DETECT DUPLICATE – BY FULL DATA
-// ══════════════════════════════════════════════════════════════════════════════
-
 void HashSystem::detectDuplicateByFullData()
 {
       duplicateMode = 3;
@@ -592,10 +515,7 @@ void HashSystem::detectDuplicateByFullData()
       cout << "Duplicate detection finished. Result saved to output/result.txt\n";
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  PRINT DUPLICATES  – paginated, groups by duplicateMode
-// ══════════════════════════════════════════════════════════════════════════════
-
 void HashSystem::printDuplicates()
 {
       if (duplicateMode == 0)
@@ -713,10 +633,7 @@ void HashSystem::printDuplicates()
       }
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  COUNT HELPERS
-// ══════════════════════════════════════════════════════════════════════════════
-
 int HashSystem::count() const
 {
       return totalNodes;
@@ -738,10 +655,7 @@ int HashSystem::countDuplicate() const
       return total;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 //  STATISTICS  – identical output format to LinkedList::showStatistics
-// ══════════════════════════════════════════════════════════════════════════════
-
 void HashSystem::showStatistics(long insertTime, long searchTime, long deleteTime, long showTime, long detectTime)
 {
       int total = count();

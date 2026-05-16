@@ -51,12 +51,16 @@ Hasil duplicate disimpan ke output/result.txt
 
 ```
 duplicate-detection/
-├── main.cpp                   - program utama dan menu sistem
-├── data.h                     - struktur data arsip
-├── linkedList.h               - deklarasi Linked List
-├── linkedList.cpp             - implementasi Linked List
-├── fileHandler.h              - deklarasi fungsi pembaca dataset
-├── fileHandler.cpp            - membaca dataset CSV
+├── include/
+|     ├── fileHandler.h              - deklarasi fungsi pembaca dataset
+|     ├── data.h                     - struktur data arsip
+|     ├── linkedList.h               - deklarasi Linked List
+|     └── hashSystem.h               - deklarasi Hash Table
+├── src/
+|     ├── main.cpp                   - program utama dan menu sistem
+|     ├── fileHandler.cpp            - membaca dataset CSV
+|     ├── linkedList.cpp             - implementasi Linked List
+|     └── hashSystem.cpp             - implementasi Hash Table
 ├── dataset/
 |     └── dataset.csv          - dataset arsip
 └── output/

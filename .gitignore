@@ -5,6 +5,5 @@ main2
 *.exe
 main.dSYM/
 .DS_Store
-dataset/dataset.csv
-dataset/ArsipDataset/
+public/ArsipDataset/
 program1
