@@ -61,7 +61,7 @@ duplicate-detection/
 |     ├── fileHandler.cpp            - membaca dataset CSV
 |     ├── linkedList.cpp             - implementasi Linked List
 |     └── hashSystem.cpp             - implementasi Hash Table
-├── dataset/
+├── public/
 |     └── dataset.csv          - dataset arsip
 └── output/
       └── result.txt           - hasil deteksi duplikasi
