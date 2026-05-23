@@ -1,3 +1,4 @@
-data_size,data_structure,insert_time_ms,search_time_ms,update_time_ms,delete_time_ms,duplicate_detection_time_ms,show_time_ms
-1000,Linked List,0,0,0,0,22,2142
-10000,Linked List,2,0,0,0,1438,2311
+data_size,data_structure,insert_time_us,search_time_us,update_time_us,delete_time_us,duplicate_detection_time_us,show_time_us
+1000,Linked List,249,123,36,32,24191,3393055
+1000,Hash Table,1786,2,35,22,4500,2618191
+1000,AVL Tree,4709,105,44,113,4639,1848396

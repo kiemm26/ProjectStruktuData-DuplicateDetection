@@ -21,7 +21,7 @@ using namespace std;
 const string DEFAULT_DATASET_FILE = "dataset/dataset.csv";
 const string FALLBACK_DATASET_FILE = "public/dataset.csv";
 const string BENCHMARK_FILE = "output/benchmark.csv";
-const string BENCHMARK_HEADER = "data_size,data_structure,insert_time_ms,search_time_ms,update_time_ms,delete_time_ms,duplicate_detection_time_ms,show_time_ms";
+const string BENCHMARK_HEADER = "data_size,data_structure,insert_time_us,search_time_us,update_time_us,delete_time_us,duplicate_detection_time_us,show_time_us";
 
 enum class StructureType
 {
@@ -34,12 +34,12 @@ struct BenchmarkStats
 {
       int dataSize = 0;
       string dataStructure = "";
-      long long insertTimeMs = 0;
-      long long searchTimeMs = 0;
-      long long updateTimeMs = 0;
-      long long deleteTimeMs = 0;
-      long long duplicateDetectionTimeMs = 0;
-      long long showTimeMs = 0;
+      long long insertTimeUs = 0;
+      long long searchTimeUs = 0;
+      long long updateTimeUs = 0;
+      long long deleteTimeUs = 0;
+      long long duplicateDetectionTimeUs = 0;
+      long long showTimeUs = 0;
 };
 
 class DuplicateSystem
@@ -130,12 +130,12 @@ public:
 };
 
 template <typename Func>
-long long measureMs(Func action)
+long long measureUs(Func action)
 {
       auto start = chrono::high_resolution_clock::now();
       action();
       auto end = chrono::high_resolution_clock::now();
-      return chrono::duration_cast<chrono::milliseconds>(end - start).count();
+      return chrono::duration_cast<chrono::microseconds>(end - start).count();
 }
 
 bool fileExists(const string &filename)
@@ -283,12 +283,12 @@ bool parseBenchmarkRow(const string &line, BenchmarkStats &row)
       {
             row.dataSize = stoi(columns[0]);
             row.dataStructure = columns[1];
-            row.insertTimeMs = stoll(columns[2]);
-            row.searchTimeMs = stoll(columns[3]);
-            row.updateTimeMs = stoll(columns[4]);
-            row.deleteTimeMs = stoll(columns[5]);
-            row.duplicateDetectionTimeMs = stoll(columns[6]);
-            row.showTimeMs = stoll(columns[7]);
+            row.insertTimeUs = stoll(columns[2]);
+            row.searchTimeUs = stoll(columns[3]);
+            row.updateTimeUs = stoll(columns[4]);
+            row.deleteTimeUs = stoll(columns[5]);
+            row.duplicateDetectionTimeUs = stoll(columns[6]);
+            row.showTimeUs = stoll(columns[7]);
       }
       catch (...)
       {
@@ -337,12 +337,12 @@ void writeBenchmarkRows(const vector<BenchmarkStats> &rows)
       {
             out << row.dataSize << ","
                 << row.dataStructure << ","
-                << row.insertTimeMs << ","
-                << row.searchTimeMs << ","
-                << row.updateTimeMs << ","
-                << row.deleteTimeMs << ","
-                << row.duplicateDetectionTimeMs << ","
-                << row.showTimeMs << endl;
+                << row.insertTimeUs << ","
+                << row.searchTimeUs << ","
+                << row.updateTimeUs << ","
+                << row.deleteTimeUs << ","
+                << row.duplicateDetectionTimeUs << ","
+                << row.showTimeUs << endl;
       }
 
       out.close();
@@ -383,12 +383,12 @@ void displayBenchmarkTable()
       printBenchmarkSeparator();
       cout << "| " << left << setw(9) << "data_size"
            << " | " << setw(13) << "structure"
-           << " | " << right << setw(9) << "insert"
-           << " | " << setw(9) << "search"
-           << " | " << setw(9) << "update"
-           << " | " << setw(9) << "delete"
-           << " | " << setw(10) << "duplicate"
-           << " | " << setw(7) << "show"
+           << " | " << right << setw(9) << "insert_us"
+           << " | " << setw(9) << "search_us"
+           << " | " << setw(9) << "update_us"
+           << " | " << setw(9) << "delete_us"
+           << " | " << setw(10) << "dup_us"
+           << " | " << setw(7) << "show_us"
            << " |" << endl;
       printBenchmarkSeparator();
 
@@ -404,12 +404,12 @@ void displayBenchmarkTable()
       {
             cout << "| " << right << setw(9) << row.dataSize
                  << " | " << left << setw(13) << row.dataStructure
-                 << " | " << right << setw(9) << row.insertTimeMs
-                 << " | " << setw(9) << row.searchTimeMs
-                 << " | " << setw(9) << row.updateTimeMs
-                 << " | " << setw(9) << row.deleteTimeMs
-                 << " | " << setw(10) << row.duplicateDetectionTimeMs
-                 << " | " << setw(7) << row.showTimeMs
+                 << " | " << right << setw(9) << row.insertTimeUs
+                 << " | " << setw(9) << row.searchTimeUs
+                 << " | " << setw(9) << row.updateTimeUs
+                 << " | " << setw(9) << row.deleteTimeUs
+                 << " | " << setw(10) << row.duplicateDetectionTimeUs
+                 << " | " << setw(7) << row.showTimeUs
                  << " |" << endl;
       }
 
@@ -418,11 +418,11 @@ void displayBenchmarkTable()
 
 void resetOperationTimes(BenchmarkStats &stats)
 {
-      stats.searchTimeMs = 0;
-      stats.updateTimeMs = 0;
-      stats.deleteTimeMs = 0;
-      stats.duplicateDetectionTimeMs = 0;
-      stats.showTimeMs = 0;
+      stats.searchTimeUs = 0;
+      stats.updateTimeUs = 0;
+      stats.deleteTimeUs = 0;
+      stats.duplicateDetectionTimeUs = 0;
+      stats.showTimeUs = 0;
 }
 
 void reloadData(unique_ptr<DuplicateSystem> &system,
@@ -438,7 +438,7 @@ void reloadData(unique_ptr<DuplicateSystem> &system,
       stats.dataSize = static_cast<int>(dataset.size());
       resetOperationTimes(stats);
 
-      stats.insertTimeMs = measureMs([&]()
+      stats.insertTimeUs = measureUs([&]()
                                      {
                                            for (const Data &d : dataset)
                                            {
@@ -447,7 +447,7 @@ void reloadData(unique_ptr<DuplicateSystem> &system,
                                      });
 
       cout << "Loaded " << dataset.size() << " data using " << stats.dataStructure << "." << endl;
-      cout << "Initial insert time: " << stats.insertTimeMs << " ms" << endl;
+      cout << "Initial insert time: " << stats.insertTimeUs << " us" << endl;
 }
 
 void rebuildCurrentData(unique_ptr<DuplicateSystem> &system,
@@ -460,7 +460,7 @@ void rebuildCurrentData(unique_ptr<DuplicateSystem> &system,
       stats.dataSize = static_cast<int>(dataset.size());
       resetOperationTimes(stats);
 
-      stats.insertTimeMs = measureMs([&]()
+      stats.insertTimeUs = measureUs([&]()
                                      {
                                            for (const Data &d : dataset)
                                            {
@@ -469,7 +469,7 @@ void rebuildCurrentData(unique_ptr<DuplicateSystem> &system,
                                      });
 
       cout << "Data structure changed to " << stats.dataStructure << "." << endl;
-      cout << "Reload insert time: " << stats.insertTimeMs << " ms" << endl;
+      cout << "Reload insert time: " << stats.insertTimeUs << " us" << endl;
 }
 
 void eraseRecordByID(vector<Data> &dataset, const string &id)
@@ -539,6 +539,7 @@ int main()
       BenchmarkStats stats;
 
       reloadData(system, currentDataset, filename, requestedDataSize, activeStructure, stats);
+      upsertBenchmarkRow(stats);
 
       while (true)
       {
@@ -550,10 +551,11 @@ int main()
             case 1:
             {
                   Data d = inputData();
-                  stats.insertTimeMs = measureMs([&]()
+                  stats.insertTimeUs = measureUs([&]()
                                                  { system->insert(d); });
                   currentDataset.push_back(d);
                   syncBenchmarkContext(stats, system.get(), activeStructure);
+                  upsertBenchmarkRow(stats);
                   cout << "Data inserted successfully!" << endl;
                   break;
             }
@@ -571,20 +573,20 @@ int main()
                   if (option == 1)
                   {
                         string id = readText("Enter ID: ");
-                        stats.searchTimeMs = measureMs([&]()
+                        stats.searchTimeUs = measureUs([&]()
                                                        { result = system->searchByID(id); });
                   }
                   else if (option == 2)
                   {
                         string name = readText("Enter name: ");
-                        stats.searchTimeMs = measureMs([&]()
+                        stats.searchTimeUs = measureUs([&]()
                                                        { result = system->searchByName(name); });
                   }
                   else if (option == 3)
                   {
                         string id = readText("Enter ID: ");
                         string name = readText("Enter Name: ");
-                        stats.searchTimeMs = measureMs([&]()
+                        stats.searchTimeUs = measureUs([&]()
                                                        { result = system->searchByIDAndName(id, name); });
                   }
                   else
@@ -597,6 +599,7 @@ int main()
                         printData(*result);
                   else
                         cout << "Data not found" << endl;
+                  upsertBenchmarkRow(stats);
                   break;
             }
             case 3:
@@ -611,17 +614,17 @@ int main()
 
                   if (option == 1)
                   {
-                        stats.duplicateDetectionTimeMs = measureMs([&]()
+                        stats.duplicateDetectionTimeUs = measureUs([&]()
                                                                    { system->detectDuplicateByContent(); });
                   }
                   else if (option == 2)
                   {
-                        stats.duplicateDetectionTimeMs = measureMs([&]()
+                        stats.duplicateDetectionTimeUs = measureUs([&]()
                                                                    { system->detectDuplicateByMetadata(); });
                   }
                   else if (option == 3)
                   {
-                        stats.duplicateDetectionTimeMs = measureMs([&]()
+                        stats.duplicateDetectionTimeUs = measureUs([&]()
                                                                    { system->detectDuplicateByFullData(); });
                   }
                   else
@@ -631,6 +634,7 @@ int main()
                   }
 
                   cout << "Duplicate detection completed!" << endl;
+                  upsertBenchmarkRow(stats);
                   break;
             }
             case 4:
@@ -644,13 +648,15 @@ int main()
 
                   if (option == 1)
                   {
-                        stats.showTimeMs = measureMs([&]()
+                        stats.showTimeUs = measureUs([&]()
                                                      { system->printAll(); });
+                        upsertBenchmarkRow(stats);
                   }
                   else if (option == 2)
                   {
-                        stats.showTimeMs = measureMs([&]()
+                        stats.showTimeUs = measureUs([&]()
                                                      { system->printDuplicates(); });
+                        upsertBenchmarkRow(stats);
                   }
                   else
                   {
@@ -662,7 +668,7 @@ int main()
             {
                   string id = readText("Enter ID to delete: ");
                   int before = system->count();
-                  stats.deleteTimeMs = measureMs([&]()
+                  stats.deleteTimeUs = measureUs([&]()
                                                  { system->deleteByID(id); });
 
                   if (system->count() < before)
@@ -670,6 +676,7 @@ int main()
                         eraseRecordByID(currentDataset, id);
                         syncBenchmarkContext(stats, system.get(), activeStructure);
                   }
+                  upsertBenchmarkRow(stats);
                   break;
             }
             case 6:
@@ -688,7 +695,7 @@ int main()
                   cout << "Enter new data" << endl;
                   Data newData = inputData();
 
-                  stats.updateTimeMs = measureMs([&]()
+                  stats.updateTimeUs = measureUs([&]()
                                                  {
                                                        if (newData.id == oldID)
                                                        {
@@ -704,13 +711,12 @@ int main()
                                                  });
 
                   updateRecordByID(currentDataset, oldID, newData);
+                  upsertBenchmarkRow(stats);
                   cout << "Data updated successfully!" << endl;
                   break;
             }
             case 7:
             {
-                  syncBenchmarkContext(stats, system.get(), activeStructure);
-                  upsertBenchmarkRow(stats);
                   displayBenchmarkTable();
                   break;
             }
@@ -718,12 +724,14 @@ int main()
             {
                   requestedDataSize = chooseDataSize();
                   reloadData(system, currentDataset, filename, requestedDataSize, activeStructure, stats);
+                  upsertBenchmarkRow(stats);
                   break;
             }
             case 9:
             {
                   activeStructure = chooseDataStructure();
                   rebuildCurrentData(system, currentDataset, activeStructure, stats);
+                  upsertBenchmarkRow(stats);
                   break;
             }
             case 10:
