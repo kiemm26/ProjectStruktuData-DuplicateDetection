@@ -1,0 +1,4 @@
+Total Data: 532619
+Unique Data: 522368
+Duplicate Data: 10251
+Execution Time: 0.616137 seconds
