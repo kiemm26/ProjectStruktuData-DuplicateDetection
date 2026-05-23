@@ -6,7 +6,7 @@
 
 using namespace std;
 
-vector<Data> readCSV(string filename)
+vector<Data> readCSV(string filename, int limit)
 {
       vector<Data> dataset;
       ifstream file(filename);
@@ -20,7 +20,6 @@ vector<Data> readCSV(string filename)
       string line;
       getline(file, line); // skip header
 
-      int limit = 1000;
       int count = 0;
       while (getline(file, line))
       {

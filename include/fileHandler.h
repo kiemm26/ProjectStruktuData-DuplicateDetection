@@ -4,6 +4,6 @@
 #include <vector>
 #include "data.h"
 
-vector<Data> readCSV(string filename);
+vector<Data> readCSV(string filename, int limit);
 
 #endif
