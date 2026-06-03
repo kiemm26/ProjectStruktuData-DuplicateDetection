@@ -6,6 +6,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
@@ -21,7 +22,7 @@ using namespace std;
 const string DEFAULT_DATASET_FILE = "dataset/dataset.csv";
 const string FALLBACK_DATASET_FILE = "public/dataset.csv";
 const string BENCHMARK_FILE = "output/benchmark.csv";
-const string BENCHMARK_HEADER = "data_size,data_structure,insert_time_us,search_time_us,update_time_us,delete_time_us,duplicate_detection_time_us,show_time_us";
+const string BENCHMARK_HEADER = "data_size,data_structure,insert_time_us,search_time_us,update_time_us,delete_time_us,duplicate_detection_time_us,show_time_us,memory_usage_bytes";
 
 enum class StructureType
 {
@@ -40,6 +41,7 @@ struct BenchmarkStats
       long long deleteTimeUs = 0;
       long long duplicateDetectionTimeUs = 0;
       long long showTimeUs = 0;
+      long long memoryUsageBytes = 0;
 };
 
 class DuplicateSystem
@@ -136,6 +138,21 @@ long long measureUs(Func action)
       action();
       auto end = chrono::high_resolution_clock::now();
       return chrono::duration_cast<chrono::microseconds>(end - start).count();
+}
+
+long long getMemoryUsageBytes()
+{
+      struct rusage usage;
+      if (getrusage(RUSAGE_SELF, &usage) != 0)
+            return 0;
+
+#if defined(__APPLE__) && defined(__MACH__)
+      return static_cast<long long>(usage.ru_maxrss);
+#elif defined(__linux__)
+      return static_cast<long long>(usage.ru_maxrss) * 1024LL;
+#else
+      return static_cast<long long>(usage.ru_maxrss);
+#endif
 }
 
 bool fileExists(const string &filename)
@@ -276,7 +293,7 @@ vector<string> splitCSVLine(const string &line)
 bool parseBenchmarkRow(const string &line, BenchmarkStats &row)
 {
       vector<string> columns = splitCSVLine(line);
-      if (columns.size() != 8)
+      if (columns.size() != 9)
             return false;
 
       try
@@ -289,6 +306,7 @@ bool parseBenchmarkRow(const string &line, BenchmarkStats &row)
             row.deleteTimeUs = stoll(columns[5]);
             row.duplicateDetectionTimeUs = stoll(columns[6]);
             row.showTimeUs = stoll(columns[7]);
+            row.memoryUsageBytes = stoll(columns[8]);
       }
       catch (...)
       {
@@ -342,7 +360,8 @@ void writeBenchmarkRows(const vector<BenchmarkStats> &rows)
                 << row.updateTimeUs << ","
                 << row.deleteTimeUs << ","
                 << row.duplicateDetectionTimeUs << ","
-                << row.showTimeUs << endl;
+                << row.showTimeUs << ","
+                << row.memoryUsageBytes << endl;
       }
 
       out.close();
@@ -350,28 +369,30 @@ void writeBenchmarkRows(const vector<BenchmarkStats> &rows)
 
 void upsertBenchmarkRow(const BenchmarkStats &stats)
 {
+      BenchmarkStats currentStats = stats;
+      currentStats.memoryUsageBytes = getMemoryUsageBytes();
       vector<BenchmarkStats> rows = readBenchmarkRows();
       bool updated = false;
 
       for (BenchmarkStats &row : rows)
       {
-            if (row.dataSize == stats.dataSize && row.dataStructure == stats.dataStructure)
+            if (row.dataSize == currentStats.dataSize && row.dataStructure == currentStats.dataStructure)
             {
-                  row = stats;
+                  row = currentStats;
                   updated = true;
                   break;
             }
       }
 
       if (!updated)
-            rows.push_back(stats);
+            rows.push_back(currentStats);
 
       writeBenchmarkRows(rows);
 }
 
 void printBenchmarkSeparator()
 {
-      cout << "+-----------+---------------+-----------+-----------+-----------+-----------+------------+---------+" << endl;
+      cout << "+-----------+---------------+-----------+-----------+-----------+-----------+------------+---------+--------------------+" << endl;
 }
 
 void displayBenchmarkTable()
@@ -389,12 +410,13 @@ void displayBenchmarkTable()
            << " | " << setw(9) << "delete_us"
            << " | " << setw(10) << "dup_us"
            << " | " << setw(7) << "show_us"
+           << " | " << setw(18) << "memory_usage_bytes"
            << " |" << endl;
       printBenchmarkSeparator();
 
       if (rows.empty())
       {
-            cout << "| " << left << setw(99) << "Belum ada data benchmark."
+            cout << "| " << left << setw(120) << "Belum ada data benchmark."
                  << " |" << endl;
             printBenchmarkSeparator();
             return;
@@ -410,6 +432,7 @@ void displayBenchmarkTable()
                  << " | " << setw(9) << row.deleteTimeUs
                  << " | " << setw(10) << row.duplicateDetectionTimeUs
                  << " | " << setw(7) << row.showTimeUs
+                 << " | " << setw(18) << row.memoryUsageBytes
                  << " |" << endl;
       }
 
