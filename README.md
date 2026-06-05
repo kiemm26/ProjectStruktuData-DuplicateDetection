@@ -22,9 +22,10 @@ menggunakan beberapa metode**, yaitu:
 - Berdasarkan **metadata (name + size)**
 - Berdasarkan **kesamaan seluruh atribut data**
 
-Sistem juga dilengkapi dengan fitur **pengukuran waktu eksekusi
-(execution time)** untuk setiap operasi utama seperti insert, search,
-delete, show, dan duplicate detection.
+Sistem juga dilengkapi dengan fitur **benchmark runtime** untuk setiap
+kombinasi ukuran dataset dan struktur data. Benchmark mencatat waktu
+eksekusi operasi utama dalam microseconds serta penggunaan memori proses
+dalam bytes.
 
 ---
 
@@ -45,6 +46,7 @@ Struktur Data Pilihan (Linked List / Hash Table / AVL Tree)
 Operasi sistem (insert, search, delete, show, detect duplicate)
       ↓
 Hasil duplicate disimpan ke output/result.txt
+Benchmark runtime disimpan ke output/benchmark.csv
 ```
 
 ---
@@ -68,7 +70,8 @@ duplicate-detection/
 ├── public/
 |     └── dataset.csv          - dataset arsip
 └── output/
-      └── result.txt           - hasil deteksi duplikasi
+      ├── result.txt           - hasil deteksi duplikasi
+      └── benchmark.csv        - hasil benchmark waktu dan memori
 ```
 ---
 
@@ -287,20 +290,26 @@ Pilihan tampilan:
 Menghapus data arsip berdasarkan ID.
 
 6.  Statistics
-Menampilkan statistik sistem:
+Menampilkan tabel benchmark runtime yang tersimpan di `output/benchmark.csv`.
 
 ```
-Total Data
-Duplicate Data
-Unique Data
-Execution Time
+data_size
+data_structure
+insert_time_us
+search_time_us
+update_time_us
+delete_time_us
+duplicate_detection_time_us
+show_time_us
+memory_usage_bytes
 ```
 ---
 
-# Pengukuran Execution Time
+# Pengukuran Benchmark
 
 Program menggunakan library **chrono** dari C++ untuk mengukur waktu
-eksekusi setiap operasi.
+eksekusi setiap operasi dalam microseconds.
+
 Contoh penggunaan:
 ```
 auto start = chrono::high_resolution_clock::now();
@@ -314,9 +323,30 @@ chrono::duration_cast
 Operasi yang diukur:
  - Insert
  - Search
+ - Update
  - Delete
  - Show
  - Duplicate Detection
+
+Selain waktu eksekusi, program juga mencatat penggunaan memori proses
+runtime dengan `getrusage()` dari `<sys/resource.h>`.
+
+- macOS: `ru_maxrss` sudah dalam bytes.
+- Linux: `ru_maxrss` dalam KB, sehingga dikonversi ke bytes dengan `* 1024`.
+
+Nilai `memory_usage_bytes` merepresentasikan penggunaan memori proses
+saat benchmark berjalan, bukan memori murni dari struktur data saja.
+
+File `output/benchmark.csv` di-reset setiap program dijalankan. Setiap
+penulisan benchmark menggunakan mekanisme upsert berdasarkan kombinasi
+`data_size + data_structure`, sehingga kombinasi yang sama diperbarui
+tanpa membuat duplicate row.
+
+Header CSV:
+
+```csv
+data_size,data_structure,insert_time_us,search_time_us,update_time_us,delete_time_us,duplicate_detection_time_us,show_time_us,memory_usage_bytes
+```
 
 ---
 
@@ -344,34 +374,21 @@ Dimana `n` = jumlah data arsip dalam sistem.
 
 # Cara Menjalankan Program
 
-## Toggle Struktur Data
-
-Edit bagian atas `src/main.cpp`, aktifkan salah satu define:
-
-```cpp
-// #define USE_LINKED_LIST
-// #define USE_HASH_SYSTEM
-#define USE_AVL_SYSTEM
-```
-
 ## Compile
 
 ```bash
-# Linked List
-g++ -std=c++17 src/main.cpp src/fileHandler.cpp src/linkedList.cpp -o program_ll
-
-# Hash Table
-g++ -std=c++17 src/main.cpp src/fileHandler.cpp src/hashSystem.cpp -o program_hash
-
-# AVL Tree
-g++ -std=c++17 src/main.cpp src/fileHandler.cpp src/avlSystem.cpp -o program_avl
+g++ -Iinclude src/*.cpp -o main
 ```
 
 ## Run
 
 ```bash
-./program_ll     # atau program_hash / program_avl
+./main
 ```
+
+Saat program berjalan, pengguna memilih jumlah data awal dan struktur data
+melalui menu. Struktur data dan ukuran dataset dapat diganti tanpa restart
+melalui menu **Change Data Structure** dan **Change Data Size**.
 
 ---
 
@@ -383,6 +400,7 @@ g++ -std=c++17 src/main.cpp src/fileHandler.cpp src/avlSystem.cpp -o program_avl
 - Hash Table (separate chaining)
 - AVL Tree (self-balancing BST)
 - chrono library
+- getrusage (`<sys/resource.h>`) untuk benchmark memori
 - CSV file handling
 
 ---
@@ -391,6 +409,5 @@ g++ -std=c++17 src/main.cpp src/fileHandler.cpp src/avlSystem.cpp -o program_avl
 
 - Perbandingan performa ketiga struktur data secara visual (grafik execution time)
 - Analisis performa dengan dataset berukuran bervariasi (1K, 10K, 100K)
-- Penambahan fitur Update data
 - Secondary index untuk pencarian by Name di AVL Tree (AVL kedua dengan key = name)
-- Ekspor hasil statistik ke file CSV untuk analisis lebih lanjut
+- Visualisasi hasil `output/benchmark.csv` untuk analisis waktu dan memori
